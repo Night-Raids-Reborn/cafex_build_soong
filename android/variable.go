@@ -20,6 +20,8 @@ import (
 	"runtime"
 	"strings"
 
+	"aosp/soong/android"
+
 	"github.com/google/blueprint/proptools"
 )
 
@@ -159,6 +161,9 @@ type variableProperties struct {
 		Device_support_hwfde_perf struct {
 			Cflags []string
 		}
+
+		// include Lineage variables
+		Aosp android_aosp.Product_variables
 	} `android:"arch_variant"`
 }
 
@@ -372,6 +377,9 @@ type productVariables struct {
 	InstallExtraFlattenedApexes *bool `json:",omitempty"`
 
 	BoardUsesRecoveryAsBoot *bool `json:",omitempty"`
+
+	// include Lineage variables
+	Aosp android_aosp.ProductVariables
 }
 
 func boolPtr(v bool) *bool {
