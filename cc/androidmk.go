@@ -95,9 +95,9 @@ func (c *Module) AndroidMkEntries() []android.AndroidMkEntries {
 				if len(c.Properties.AndroidMkHeaderLibs) > 0 {
 					entries.AddStrings("LOCAL_HEADER_LIBRARIES", c.Properties.AndroidMkHeaderLibs...)
 				}
-                                if lib, ok := c.compiler.(*libraryDecorator); ok {
-                                       entries.AddStrings("LOCAL_SRC_FILES", lib.baseCompiler.srcsBeforeGen.Strings()...)
-                                }
+				if lib, ok := c.compiler.(*libraryDecorator); ok {
+					entries.AddStrings("LOCAL_SRC_FILES", lib.baseCompiler.srcsBeforeGen.Strings()...)
+				}
 				entries.SetString("LOCAL_SOONG_LINK_TYPE", c.makeLinkType)
 				if c.UseVndk() {
 					entries.SetBool("LOCAL_USE_VNDK", true)
@@ -492,7 +492,7 @@ func (c *vndkPrebuiltLibraryDecorator) AndroidMkEntries(ctx AndroidMkContext, en
 	})
 }
 
-func (c *vendorSnapshotLibraryDecorator) AndroidMkEntries(ctx AndroidMkContext, entries *android.AndroidMkEntries) {
+func (c *snapshotLibraryDecorator) AndroidMkEntries(ctx AndroidMkContext, entries *android.AndroidMkEntries) {
 	// Each vendor snapshot is exported to androidMk only when BOARD_VNDK_VERSION != current
 	// and the version of the prebuilt is same as BOARD_VNDK_VERSION.
 	if c.shared() {
@@ -509,9 +509,7 @@ func (c *vendorSnapshotLibraryDecorator) AndroidMkEntries(ctx AndroidMkContext, 
 		entries.SubName += ".cfi"
 	}
 
-	if c.androidMkVendorSuffix {
-		entries.SubName += vendorSuffix
-	}
+	entries.SubName += c.androidMkSuffix
 
 	entries.ExtraEntries = append(entries.ExtraEntries, func(entries *android.AndroidMkEntries) {
 		c.libraryDecorator.androidMkWriteExportedFlags(entries)
@@ -522,7 +520,10 @@ func (c *vendorSnapshotLibraryDecorator) AndroidMkEntries(ctx AndroidMkContext, 
 			entries.SetString("LOCAL_BUILT_MODULE_STEM", "$(LOCAL_MODULE)"+ext)
 			entries.SetString("LOCAL_MODULE_SUFFIX", suffix)
 			entries.SetString("LOCAL_MODULE_STEM", stem)
-			if c.shared() {
+			// TODO(b/181815415) remove isLlndk() when possible
+			if c.isLlndk() {
+				entries.SetBool("LOCAL_UNINSTALLABLE_MODULE", true)
+			} else if c.shared() {
 				entries.SetString("LOCAL_MODULE_PATH", path)
 			}
 			if c.tocFile.Valid() {
@@ -536,28 +537,18 @@ func (c *vendorSnapshotLibraryDecorator) AndroidMkEntries(ctx AndroidMkContext, 
 	})
 }
 
-func (c *vendorSnapshotBinaryDecorator) AndroidMkEntries(ctx AndroidMkContext, entries *android.AndroidMkEntries) {
+func (c *snapshotBinaryDecorator) AndroidMkEntries(ctx AndroidMkContext, entries *android.AndroidMkEntries) {
 	entries.Class = "EXECUTABLES"
-
-	if c.androidMkVendorSuffix {
-		entries.SubName = vendorSuffix
-	} else {
-		entries.SubName = ""
-	}
+	entries.SubName = c.androidMkSuffix
 
 	entries.ExtraEntries = append(entries.ExtraEntries, func(entries *android.AndroidMkEntries) {
 		entries.AddStrings("LOCAL_MODULE_SYMLINKS", c.Properties.Symlinks...)
 	})
 }
 
-func (c *vendorSnapshotObjectLinker) AndroidMkEntries(ctx AndroidMkContext, entries *android.AndroidMkEntries) {
+func (c *snapshotObjectLinker) AndroidMkEntries(ctx AndroidMkContext, entries *android.AndroidMkEntries) {
 	entries.Class = "STATIC_LIBRARIES"
-
-	if c.androidMkVendorSuffix {
-		entries.SubName = vendorSuffix
-	} else {
-		entries.SubName = ""
-	}
+	entries.SubName = c.androidMkSuffix
 
 	entries.ExtraFooters = append(entries.ExtraFooters,
 		func(w io.Writer, name, prefix, moduleDir string, entries *android.AndroidMkEntries) {

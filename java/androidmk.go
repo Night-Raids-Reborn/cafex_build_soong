@@ -127,8 +127,8 @@ func (library *Library) AndroidMkEntries() []android.AndroidMkEntries {
 						entries.AddStrings("LOCAL_ADDITIONAL_CHECKED_MODULE", library.additionalCheckedModules.Strings()...)
 					}
 
-					if library.proguardDictionary != nil {
-						entries.SetPath("LOCAL_SOONG_PROGUARD_DICT", library.proguardDictionary)
+					if library.dexer.proguardDictionary.Valid() {
+						entries.SetPath("LOCAL_SOONG_PROGUARD_DICT", library.dexer.proguardDictionary.Path())
 					}
 					entries.SetString("LOCAL_MODULE_STEM", library.Stem())
 
@@ -194,9 +194,12 @@ func (prebuilt *Import) AndroidMkEntries() []android.AndroidMkEntries {
 		ExtraEntries: []android.AndroidMkExtraEntriesFunc{
 			func(entries *android.AndroidMkEntries) {
 				entries.SetBool("LOCAL_UNINSTALLABLE_MODULE", !Bool(prebuilt.properties.Installable))
+				if prebuilt.dexJarFile != nil {
+					entries.SetPath("LOCAL_SOONG_DEX_JAR", prebuilt.dexJarFile)
+				}
 				entries.SetPath("LOCAL_SOONG_HEADER_JAR", prebuilt.combinedClasspathFile)
 				entries.SetPath("LOCAL_SOONG_CLASSES_JAR", prebuilt.combinedClasspathFile)
-				entries.SetString("LOCAL_SDK_VERSION", prebuilt.sdkVersion().raw)
+				entries.SetString("LOCAL_SDK_VERSION", prebuilt.makeSdkVersion())
 				entries.SetString("LOCAL_MODULE_STEM", prebuilt.Stem())
 			},
 		},
@@ -332,8 +335,8 @@ func (app *AndroidApp) AndroidMkEntries() []android.AndroidMkEntries {
 				if app.jacocoReportClassesFile != nil {
 					entries.SetPath("LOCAL_SOONG_JACOCO_REPORT_CLASSES_JAR", app.jacocoReportClassesFile)
 				}
-				if app.proguardDictionary != nil {
-					entries.SetPath("LOCAL_SOONG_PROGUARD_DICT", app.proguardDictionary)
+				if app.dexer.proguardDictionary.Valid() {
+					entries.SetPath("LOCAL_SOONG_PROGUARD_DICT", app.dexer.proguardDictionary.Path())
 				}
 
 				if app.Name() == "framework-res" {
@@ -678,6 +681,9 @@ func (a *AndroidAppImport) AndroidMkEntries() []android.AndroidMkEntries {
 					entries.SetString("LOCAL_SOONG_BUILT_INSTALLED", a.dexpreopter.builtInstalled)
 				}
 				entries.AddStrings("LOCAL_INSTALLED_MODULE_STEM", a.installPath.Rel())
+				if Bool(a.properties.Export_package_resources) {
+					entries.SetPath("LOCAL_SOONG_RESOURCE_EXPORT_PACKAGE", a.outputFile)
+				}
 			},
 		},
 	}}
