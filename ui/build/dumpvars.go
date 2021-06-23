@@ -137,6 +137,9 @@ func dumpMakeVars(ctx Context, config Config, goals, vars []string, write_soong_
 
 // Variables to print out in the top banner
 var BannerVars = []string{
+        "CAFEX_VERSION",
+        "CAFEX_BUILD_TYPE",
+        "CAFEX_BUILD_VARIANT",
 	"PLATFORM_VERSION_CODENAME",
 	"PLATFORM_VERSION",
 	"TARGET_PRODUCT",
